@@ -1,0 +1,11 @@
+streamlit
+pdfplumber
+pymupdf
+scikit-learn
+nltk
+spacy
+pytesseract
+Pillow
+fastapi
+uvicorn
+requests
