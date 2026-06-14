@@ -1,4 +1,6 @@
 import streamlit as st
+import requests
+from datetime import datetime
 from resume_parser import extract_resume
 from utils import *
 
@@ -41,8 +43,14 @@ job_description = st.text_area(
 
 if uploaded_file is not None:
 
-    # Extract text from resume
+    # Extract resume text
     resume_text = extract_resume(uploaded_file)
+
+    # Log upload
+    print(
+        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+        f"UPLOAD | File: {uploaded_file.name}"
+    )
 
     # =========================
     # RESUME ANALYSIS
@@ -60,9 +68,7 @@ if uploaded_file is not None:
 
     st.subheader("📊 ATS Score")
 
-    st.progress(
-        min(score / 100, 1.0)
-    )
+    st.progress(min(score / 100, 1.0))
 
     st.metric(
         label="ATS Score",
@@ -76,17 +82,14 @@ if uploaded_file is not None:
     st.subheader("🛠 Skills Found")
 
     if skills:
-
         for category, skill_list in categorized.items():
 
             if skill_list:
-
                 st.write(f"### {category}")
 
                 cols = st.columns(4)
 
                 for i, skill in enumerate(skill_list):
-
                     cols[i % 4].success(skill)
 
     else:
@@ -102,7 +105,6 @@ if uploaded_file is not None:
 
         if status:
             st.success(f"✅ {section} Found")
-
         else:
             st.error(f"❌ {section} Missing")
 
@@ -113,14 +115,10 @@ if uploaded_file is not None:
     st.subheader("📌 Resume Improvement Suggestions")
 
     if section_recs:
-
         for rec in section_recs:
             st.warning(rec)
-
     else:
-        st.success(
-            "All important sections are present."
-        )
+        st.success("All important sections are present.")
 
     # =========================
     # ATS FEEDBACK
@@ -129,19 +127,16 @@ if uploaded_file is not None:
     st.subheader("💡 Resume Feedback")
 
     if score < 60:
-
         st.warning(
             "Add more technical skills, certifications, and projects."
         )
 
     elif score < 80:
-
         st.info(
             "Good resume. Add stronger projects and quantified impact."
         )
 
     else:
-
         st.success(
             "Strong ATS-friendly resume."
         )
@@ -152,9 +147,12 @@ if uploaded_file is not None:
 
     if job_description:
 
-        degree_required = extract_degree(
-            job_description
+        print(
+            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+            f"ANALYSIS_STARTED"
         )
+
+        degree_required = extract_degree(job_description)
 
         experience_required = extract_experience(
             job_description
@@ -165,14 +163,45 @@ if uploaded_file is not None:
             job_description
         )
 
-        semantic_score = semantic_match(
-            resume_text,
-            job_description
-        )
+        # =========================
+        # SEMANTIC API CALL
+        # =========================
 
-        fit_verdict = candidate_fit(
-            match_score
-        )
+        semantic_score = 0
+
+        try:
+            response = requests.post(
+                "https://sam444m-resume-semantic-api.hf.space/semantic-match",
+                json={
+                    "resume_text": resume_text,
+                    "jd_text": job_description
+                }
+            )
+
+            if response.status_code == 200:
+                semantic_score = response.json().get(
+                    "semantic_score",
+                    0
+                )
+
+                print(
+                    f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+                    f"ANALYSIS_COMPLETED"
+                )
+
+            else:
+                print(
+                    f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+                    f"SEMANTIC_API_FAILED"
+                )
+
+        except Exception as e:
+            print(
+                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+                f"ERROR: {str(e)}"
+            )
+
+        fit_verdict = candidate_fit(match_score)
 
         recommendations = generate_recommendations(
             missing
@@ -239,10 +268,8 @@ if uploaded_file is not None:
         st.subheader("🚀 Skill Recommendations")
 
         if recommendations:
-
             for rec in recommendations:
                 st.write(f"• {rec}")
-
         else:
             st.success(
                 "Excellent match for this role."
