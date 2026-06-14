@@ -1,64 +1,52 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 from utils import *
 
 app = FastAPI()
 
 
-@app.post("/analyze/")
-def analyze_resume(
-    resume_text: str,
+class ResumeRequest(BaseModel):
+    resume_text: str
     job_description: str = ""
-):
 
-    # =========================
-    # RESUME ANALYSIS
-    # =========================
 
+@app.post("/analyze")
+def analyze_resume(data: ResumeRequest):
+
+    resume_text = data.resume_text
+    job_description = data.job_description
+
+    # Resume analysis
     skills = extract_skills(resume_text)
     sections = check_sections(resume_text)
-    score = ats_score(skills, sections)
-    categorized = categorize_skills(skills)
-
-    section_recs = section_recommendations(
-        sections
-    )
+    ats = ats_score(skills, sections)
+    categories = categorize_skills(skills)
+    section_recs = section_recommendations(sections)
 
     result = {
         "skills": skills,
-        "categories": categorized,
-        "ats_score": score,
+        "categories": categories,
+        "ats_score": ats,
         "sections": sections,
         "section_recommendations": section_recs
     }
 
-    # =========================
-    # JOB DESCRIPTION ANALYSIS
-    # =========================
-
     if job_description:
 
-        degree_required = extract_degree(
-            job_description
-        )
-
-        experience_required = extract_experience(
-            job_description
-        )
+        degree_required = extract_degree(job_description)
+        experience_required = extract_experience(job_description)
 
         matched, missing, match_score = compare_with_jd(
             skills,
             job_description
         )
 
-        # Semantic matching from Colab API
         semantic_score = semantic_match(
             resume_text,
             job_description
         )
 
-        fit_verdict = candidate_fit(
-            match_score
-        )
+        fit_verdict = candidate_fit(match_score)
 
         recommendations = generate_recommendations(
             missing
