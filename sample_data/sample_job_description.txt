@@ -1,0 +1,19 @@
+Job Title: Senior Data Scientist
+
+We are looking for a Senior Data Scientist with 4+ years of experience to join our analytics team.
+
+Requirements:
+- Strong experience in Python and SQL
+- Experience with Machine Learning and Deep Learning
+- Familiarity with TensorFlow or PyTorch
+- Experience with cloud platforms such as AWS or GCP
+- Bachelor's degree in Computer Science or a related field
+
+Nice to have:
+- Experience with Power BI or Tableau
+- Knowledge of Docker and Kubernetes
+
+Responsibilities:
+- Build and deploy machine learning models into production
+- Collaborate with cross-functional teams to define data-driven strategies
+- Present findings and recommendations to stakeholders
