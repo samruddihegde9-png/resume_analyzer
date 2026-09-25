@@ -66,12 +66,19 @@ resume-intelligence/
 | 2. Normalized keyword matching | Skill alias/taxonomy lookup | Custom (`keyword_engine.py`) |
 | 3. Skill taxonomy matching | Category-level coverage | Custom |
 | 4. TF-IDF similarity | Classic bag-of-words cosine similarity | scikit-learn |
-| 5. Semantic similarity | Word-vector document similarity | **spaCy** (`en_core_web_md`, installed from spaCy's own GitHub-hosted wheel — not Hugging Face) |
+| 5. Semantic similarity | Word-vector document similarity | **spaCy** (`en_core_web_md`) when available — **not installed by default** (see note below); falls back automatically to the TF-IDF score otherwise |
 | 6. Experience alignment | Regex-based year-range extraction vs. JD requirement | Custom |
 | 7. Education alignment | Degree-level comparison | Custom |
 | 8. Responsibility alignment | TF-IDF similarity of experience text vs. JD duties | scikit-learn |
 
-If the spaCy vector model fails to load in a given environment (e.g. a minimal deployment where the model wheel didn't install), semantic similarity **automatically falls back to the TF-IDF score** rather than failing or fabricating a number. The active method is always reported in the UI's "matching methodology" panel.
+If the spaCy vector model fails to load in a given environment, semantic similarity **automatically falls back to the TF-IDF score** rather than failing or fabricating a number. The active method is always reported in the UI's "matching methodology" panel.
+
+> **Note on spaCy:** `requirements.txt` does **not** install spaCy by default. Streamlit Community Cloud currently runs Python 3.14, and spaCy's compiled dependencies (`thinc`/`blis`) don't yet ship prebuilt wheels for that version — installing them there triggers a source build that fails (a Cython/NumPy ABI incompatibility upstream, unrelated to this project). Rather than break deployment, the app runs its "semantic similarity" layer on TF-IDF only in that environment, which the matching engine already treats as a first-class fallback, not a degraded state. If you deploy somewhere pinned to Python 3.10–3.12 (or Streamlit Cloud adds 3.14 wheel support later), you can restore true word-vector semantics by adding to `requirements.txt`:
+> ```
+> spacy>=3.7
+> https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl
+> ```
+> No code changes are needed — `matcher.py` detects spaCy automatically if it's importable.
 
 ## Scoring Methodology
 
@@ -122,7 +129,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-> The `en_core_web_md` spaCy model installs automatically from `requirements.txt` (a direct wheel URL from spaCy's own GitHub releases). If it's ever unavailable, the app still runs — semantic similarity falls back to TF-IDF automatically.
+> The app runs on TF-IDF-based semantic similarity by default (see the spaCy note above). No optional model needs to install for the app to run correctly.
 
 ## Streamlit Deployment
 
@@ -163,3 +170,4 @@ This tool provides **decision support, not hiring decisions**. It is intended to
 - It does not rank or compare candidates against one another.
 - All scores are heuristics grounded in text actually present in the uploaded documents — the system does not fabricate skills, experience, or qualifications.
 - Uploaded resumes are processed in memory for the session and are not stored permanently.
+
